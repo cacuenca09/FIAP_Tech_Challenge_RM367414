@@ -1,0 +1,10 @@
+pandas
+requests
+beautifulsoup4
+jsonify
+fastapi
+SQLAlchemy
+alembic
+flask_sqlalchemy
+pydantic
+uvicorn
