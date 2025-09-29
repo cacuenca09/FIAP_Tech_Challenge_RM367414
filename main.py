@@ -440,7 +440,7 @@ def read_books(db: Session = Depends(get_db)):
     return repo.get_books(db)
 
 #GET /api/v1/categories: lista todas as categorias de livros disponíveis.
-@app.get("/api/v1/categories", response_model=list[str])
+@app.get("/api/v1/categories", response_model=list[str], tags=["Obrigatório"])
 def list_categories(db: Session = Depends(get_db)):
     """
     Lista todas as categorias de livros disponíveis
