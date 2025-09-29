@@ -19,6 +19,7 @@ import datetime
 import logging
 import jwt
 from pydantic import BaseModel
+from scraping import scrape_books
 
 #Configuracoes JWT
 JWT_SECRET = "MEUSEGREDOAQUI"
@@ -222,6 +223,7 @@ def trigger_scraping(current_user: dict = Depends(admin_required)):
     Dispara processo de scraping de dados
     """
     logger.info(f"Scraping disparado por: {current_user.get('username')}")
+    scrape_books()
     return {
         "message": "Scraping iniciado com sucesso",
         "triggered_by": current_user.get("username"),
@@ -508,50 +510,9 @@ def read_book(book_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Book not found")
     return book
 
-#Pipelines de ML
-# GET /api/v1/ml/features
-@app.get("/api/v1/ml/features", response_model=List[FeatureResponse])
-def get_features(db: Session = Depends(get_db)):
-    """
-    Retorna dados formatados apenas para features de modelos ML
-    (id, preco, rating).
-    """
-    books = db.query(Book).all()
-    return [
-        FeatureResponse(
-            id=b.id,
-            preco=float(b.preco or 0.0),
-            rating=float(b.rating or 0.0)
-        )
-        for b in books
-    ]
 
 
-# GET /api/v1/ml/training-data
-@app.get("/api/v1/ml/training-data", response_model=List[TrainingDataResponse])
-def get_training_data(db: Session = Depends(get_db)):
-    """
-    Retorna dataset completo para treinamento de modelos ML.
-    """
-    books = db.query(Book).all()
-    return [
-        TrainingDataResponse(
-            id=b.id,
-            titulo=b.titulo,
-            preco=float(b.preco or 0.0),
-            rating=float(b.rating or 0.0),
-            categoria=getattr(b, "categoria", None)
-        )
-        for b in books
-    ]
 
 
-# POST /api/v1/ml/predictions
-@app.post("/api/v1/ml/predictions", response_model=PredictionResponse)
-def predict(data: PredictionRequest):
-    """
-    Recebe features e retorna uma predição.
-    (Mock: soma os valores das features).
-    """
-    prediction = sum(data.features.values())
-    return {"prediction": prediction}
+
+
