@@ -238,11 +238,9 @@ def trigger_scraping(current_user: dict = Depends(admin_required)):
         "triggered_by": current_user.get("username"),
         "timestamp": datetime.datetime.utcnow().isoformat()
     }
-# Endpoints específicos PRIMEIRO (ordem importante para evitar conflitos de rota)
-
-# *** ENDPOINT DE BUSCA JÁ IMPLEMENTADO AQUI ***
+# Endpoints específicos (ordem importante para evitar conflitos de rota)
 #GET /api/v1/books/search?title={title}&category={category}: busca livros por título e/ou categoria.
-@app.get("/api/v1/books/search")
+@app.get("/api/v1/books/search", tags=["Obrigatório"])
 def search_books_endpoint(
     title: Optional[str] = Query(None, description="Título do livro para busca parcial"),
     category: Optional[str] = Query(None, description="Categoria do livro para busca parcial"),
@@ -316,7 +314,7 @@ def search_books_endpoint(
         raise HTTPException(status_code=500, detail=f"Erro interno na busca: {str(e)}")
 
 #GET /api/v1/books/top-rated: lista os livros com melhor avaliação (rating mais alto) 
-@app.get("/api/v1/books/top-rated")
+@app.get("/api/v1/books/top-rated", tags=["Opcionais"])
 def get_top_rated_books_endpoint(db: Session = Depends(get_db)):
     """
     Lista os livros com melhor avaliação (rating mais alto)
@@ -347,7 +345,7 @@ def get_top_rated_books_endpoint(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
 
 #GET /api/v1/books/price-range?min={min}&max={max}: filtra livros dentro de uma faixa de preço específica.
-@app.get("/api/v1/books/price-range")
+@app.get("/api/v1/books/price-range", tags=["Opcionais"])
 def get_books_by_price_range(
     min_price: float = Query(None, alias="min", description="Preço mínimo"),
     max_price: float = Query(None, alias="max", description="Preço máximo"),
@@ -432,7 +430,7 @@ def get_books_by_price_range(
         raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
 
 # GET /api/v1/books  lista todos os livros
-@app.get("/api/v1/books", response_model=list[BookSchema])
+@app.get("/api/v1/books", response_model=list[BookSchema], tags=["Obrigatório"])
 def read_books(db: Session = Depends(get_db)):
     """
     Lista todos os livros disponíveis no sistema
@@ -456,7 +454,7 @@ def list_categories(db: Session = Depends(get_db)):
     return categories
 
 # GET /api/v1/health: verifica status da API e conectividade com os dados.
-@app.get("/api/v1/health")
+@app.get("/api/v1/health", tags=["Obrigatório"])
 def health_check(db: Session = Depends(get_db)):
     """
     Verifica o status da API e conectividade com o banco de dados
@@ -473,7 +471,7 @@ def health_check(db: Session = Depends(get_db)):
 
 #Endpoints opcionais
 #GET /api/v1/stats/overview: estatísticas gerais da coleção (total de livros, preço médio, distribuição de ratings).
-@app.get("/api/v1/stats/overview")
+@app.get("/api/v1/stats/overview", tags=["Opcionais"])
 def get_overview_stats(db: Session = Depends(get_db)):
     """
     Estatísticas gerais da coleção de livros
@@ -488,7 +486,7 @@ def get_overview_stats(db: Session = Depends(get_db)):
     return stats
 
 #GET /api/v1/stats/categories: estatiscas detalhadas por categoria (quantidade de livros, precos por categoria)
-@app.get("/api/v1/stats/categories")
+@app.get("/api/v1/stats/categories", tags=["Opcionais"])
 def get_stats_categories(db: Session = Depends(get_db)):
     """
     Estatísticas detalhadas por categoria
@@ -502,10 +500,10 @@ def get_stats_categories(db: Session = Depends(get_db)):
     stats = repo.get_category_stats(db)
     return stats
 
-# Endpoints com parâmetros POR ÚLTIMO (para evitar conflitos de rota)
+# Endpoints com parâmetros por ultimo (para evitar conflitos de rota)
 
 # GET /api/v1/books/{id}  retorna um livro específico
-@app.get("/api/v1/books/{book_id}", response_model=BookSchema)
+@app.get("/api/v1/books/{book_id}", response_model=BookSchema, tags=["Obrigatório"])
 def read_book(book_id: int, db: Session = Depends(get_db)):
     """
     Retorna um livro específico pelo ID
