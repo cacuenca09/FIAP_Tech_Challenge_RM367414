@@ -122,6 +122,15 @@ app = FastAPI(title="Books API")
 
 
 
+# Rota raiz para ambientes como Vercel (evita 404 em "/")
+@app.get("/")
+def root():
+    return {
+        "message": "API online",
+        "docs": "/docs",
+        "openapi": "/openapi.json"
+    }
+
 # Dependência para abrir/fechar sessão com o banco
 def get_db():
     db = SessionLocal()
