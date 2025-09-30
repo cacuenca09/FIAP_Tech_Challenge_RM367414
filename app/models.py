@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Float
-from database import Base
+from app.database import Base
 
 class Book(Base):
     __tablename__= "books"
@@ -11,3 +11,5 @@ class Book(Base):
     rating = Column(Integer, nullable=False)
     categoria = Column(String, nullable=False)
     imagem = Column(String, nullable=False)
+
+
