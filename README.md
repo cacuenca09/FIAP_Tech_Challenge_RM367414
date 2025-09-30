@@ -5,6 +5,8 @@ O projeto inclui **autenticação JWT**, endpoints de consulta obrigatórios e o
 
 Os dados são armazenados em um **PostgreSQL online (Neon)**, e o deploy foi realizado na **Vercel**, utilizando `api/index.py` como entrypoint.
 
+Acessar a API (em deploy público) : `https://fiap-tech-challenge-rm-367414-6sm8.vercel.app/docs#/`
+
 ### Objetivo
 
 Este projeto faz parte do **FIAP - Tech Challenge 1** e tem como meta:
@@ -99,8 +101,7 @@ uvicorn main:app --reload --port 8000
 
 8. Acesse a documentação automática:
 
-* Swagger UI: `http://localhost:8000/docs`
-* OpenAPI JSON: `http://localhost:8000/openapi.json`
+* Swagger UI: `https://fiap-tech-challenge-rm-367414-6sm8.vercel.app/docs#/`
 
 ### Autenticação
 
