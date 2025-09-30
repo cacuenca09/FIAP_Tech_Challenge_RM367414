@@ -1,3 +1,4 @@
-from app.main import app as fastapi_app
+from sys import api_version
+from api.main import api as fastapi_api
 
-app = fastapi_app
+api_version = fastapi_api
