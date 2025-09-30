@@ -1,7 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
-from database import SessionLocal
-from models import Book
+from app.database import SessionLocal
+from app.models import Book
 
 
 def scrape_books():
@@ -33,9 +33,6 @@ def scrape_books():
             book_soup = BeautifulSoup(book_resp.text, "html.parser")
             category = book_soup.find("ul", class_="breadcrumb").find_all("a")[2].get_text(strip=True)
 
-            
-         
-        # Adiciona no banco 
             new_book = Book(
                 titulo=title,
                 preco=float(price),
@@ -66,3 +63,5 @@ def scrape_books():
 
 if __name__ == "__main__":
     scrape_books()
+
+

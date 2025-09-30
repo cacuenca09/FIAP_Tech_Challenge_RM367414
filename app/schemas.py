@@ -34,3 +34,5 @@ class PredictionRequest(BaseModel):
 
 class PredictionResponse(BaseModel):
     prediction: float
+
+

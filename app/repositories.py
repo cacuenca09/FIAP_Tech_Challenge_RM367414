@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from models import Book
+from app.models import Book
 from sqlalchemy import func
 
 def get_books(db: Session):
@@ -22,17 +22,14 @@ def search_books(db: Session, title: str = None, category: str = None):
     Returns:
         Lista de livros que atendem aos critérios
     """
-    query = db.query(Book)  # Substitua 'Book' pelo nome do seu modelo
+    query = db.query(Book)
     
-    # Aplica filtro por título se fornecido
     if title and title.strip():
         query = query.filter(Book.titulo.ilike(f"%{title.strip()}%"))
     
-    # Aplica filtro por categoria se fornecido  
     if category and category.strip():
         query = query.filter(Book.categoria.ilike(f"%{category.strip()}%"))
     
-    # Ordena por título para resultados consistentes
     return query.order_by(Book.titulo).all()
 
 def get_categories(db: Session):
@@ -40,14 +37,10 @@ def get_categories(db: Session):
     return [row[0] for row in db.query(Book.categoria).distinct().all()]
 
 
-#Endpoints opcionais
-#GET /api/v1/stats/overview: estatísticas gerais da coleção (total de livros, preço médio, distribuição de ratings).
-
 def get_overview_stats(db: Session):
         total_books = db.query(func.count(Book.id)).scalar()
         avg_price = db.query(func.avg(Book.preco)).scalar()
 
-        # Distribuição de ratings: retorna lista de tuplas [(rating, count), ...]
         rating_distribution = (
             db.query(Book.rating, func.count(Book.rating))
             .group_by(Book.rating)
@@ -62,7 +55,6 @@ def get_overview_stats(db: Session):
             },
         }
 
-#GET /api/v1/stats/categories: estatiscas detalhadas por categoria (quantidade de livros, precos por categoria)
 def get_category_stats(db: Session):
     results = (
         db.query(
@@ -88,7 +80,6 @@ def get_category_stats(db: Session):
 
     return stats
 
-#GET /api/v1/books/top-rated: lista os livros com melhor avaliação (rating mais alto)
 def get_top_rated_books(db: Session):
     """
     Retorna todos os livros ordenados pelo rating em ordem decrescente
@@ -96,7 +87,7 @@ def get_top_rated_books(db: Session):
     try:
         return (
             db.query(Book)
-            .filter(Book.rating.is_not(None))  # Filtra apenas livros com rating
+            .filter(Book.rating.is_not(None))
             .order_by(Book.rating.desc())
             .all()
         )
@@ -104,7 +95,6 @@ def get_top_rated_books(db: Session):
         print(f"Erro ao buscar livros com melhor avaliação: {str(e)}")
         return []
 
-#GET /api/v1/books/price-range?min={min}&max={max}: filtra livros dentro de uma faixa de preço específica.
 def get_books_by_price_range (db: Session):
     """
     Retorna todos os livros ordenados pelo rating em ordem decrescente
@@ -112,7 +102,7 @@ def get_books_by_price_range (db: Session):
     try:
         return (
             db.query(Book)
-            .filter(Book.rating.is_not(None))  # Filtra apenas livros com rating
+            .filter(Book.rating.is_not(None))
             .order_by(Book.rating.desc())
             .all()
         )
@@ -120,4 +110,4 @@ def get_books_by_price_range (db: Session):
         print(f"Erro ao buscar livros com melhor avaliação: {str(e)}")
         return []
 
-#
+
