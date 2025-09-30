@@ -3,19 +3,7 @@
 API REST construída com FastAPI para coleta (scraping), armazenamento e consulta de livros do site "Books to Scrape". O projeto inclui autenticação JWT, endpoints obrigatórios e opcionais de consulta, estatísticas e integração com Postgres. Os dados são armazenados em um PostgreSQL online hospedado na Neon. O deploy foi realizado na Vercel, utilizando `api/index.py` como entrypoint.
 
 ### Arquitetura
-- **Framework**: FastAPI (`main.py`)
-- **WSGI/ASGI Adapter para Vercel**: `api/index.py` expõe `app` importando de `main.py`
-- **Banco de dados**: PostgreSQL (Neon) via SQLAlchemy 2.0 configurado em `database.py`
-- **ORM/Modelos**: `models.py` define `Book`
-- **Repositórios**: `repositories.py` concentra consultas/estatísticas
-- **Esquemas (DTOs)**: `schemas.py` com `BookSchema` e respostas auxiliares
-- **Scraping**: `scraping.py` coleta dados do site e persiste
-- **Infra de deploy**: `vercel.json` configura runtime Python e rotas
-
-Fluxo principal:
-1. `scraping.py` pode popular o banco com livros
-2. Endpoints em `main.py` usam `repositories.py` para consultar `Book`
-3. Autenticação JWT simples para rotas protegidas (admin)
+![Diagrama do projeto](./diagrama.svg)
 
 Estrutura de diretórios relevante:
 ```
