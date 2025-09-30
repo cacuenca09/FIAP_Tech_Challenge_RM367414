@@ -1,182 +1,206 @@
-# FIAP - Tech Challenge 1 - RM367414
+## FIAP - Tech Challenge 1 - Books API
 
-API de livros construída com FastAPI, SQLAlchemy e scraping do site Books to Scrape. Inclui autenticação via JWT, endpoints de consulta e estatísticas, além de um disparo protegido para executar o scraping.
+API REST construída com FastAPI para coleta (scraping), armazenamento e consulta de livros do site "Books to Scrape". O projeto inclui autenticação JWT, endpoints obrigatórios e opcionais de consulta, estatísticas e integração com Postgres. Os dados são armazenados em um PostgreSQL online hospedado na Neon. O deploy foi realizado na Vercel, utilizando `api/index.py` como entrypoint.
 
-## Objetivos
-- Coletar dados de livros via scraping (título, preço, disponibilidade, rating, categoria e imagem)
-- Persistir dados em banco PostgreSQL via SQLAlchemy
-- Disponibilizar API REST com filtros, listagem, estatísticas e dados para ML
-- Autenticação com JWT (login e refresh)
-- Deploy serverless (Vercel)
+### Arquitetura
+- **Framework**: FastAPI (`main.py`)
+- **WSGI/ASGI Adapter para Vercel**: `api/index.py` expõe `app` importando de `main.py`
+- **Banco de dados**: PostgreSQL (Neon) via SQLAlchemy 2.0 configurado em `database.py`
+- **ORM/Modelos**: `models.py` define `Book`
+- **Repositórios**: `repositories.py` concentra consultas/estatísticas
+- **Esquemas (DTOs)**: `schemas.py` com `BookSchema` e respostas auxiliares
+- **Scraping**: `scraping.py` coleta dados do site e persiste
+- **Infra de deploy**: `vercel.json` configura runtime Python e rotas
 
-## Arquitetura (arquivos principais)
-- `main.py`: aplicação FastAPI (rotas, autenticação, endpoints)
-- `database.py`: engine, `SessionLocal` e `Base` (SQLAlchemy)
-- `models.py`: modelo `Book`
-- `repositories.py`: consultas ao banco
-- `schemas.py`: Pydantic models (responses/requests)
-- `scraping.py`: rotina de scraping e persistência
-- `create_tables.py`: criação de tabelas
-- `requirements.txt`: dependências Python
-- `api/index.py`: entrypoint para Vercel (expõe `app` do FastAPI)
-- `vercel.json`: configuração de deploy na Vercel
+Fluxo principal:
+1. `scraping.py` pode popular o banco com livros
+2. Endpoints em `main.py` usam `repositories.py` para consultar `Book`
+3. Autenticação JWT simples para rotas protegidas (admin)
 
-## Requisitos
-- Python 3.11+ (3.13 usado localmente)
-- PostgreSQL acessível (local ou gerenciado)
-- Pip e virtualenv
-
-## Configuração do ambiente
-1) Crie e ative um ambiente virtual (opcional, recomendado):
-```bash
-python3 -m venv venv
-source venv/bin/activate
+Estrutura de diretórios relevante:
+```
+api/index.py          # Entrypoint Vercel (importa app do main)
+main.py               # Definição dos endpoints FastAPI
+database.py           # Engine, SessionLocal e Base (SQLAlchemy)
+models.py             # Modelo Book (ORM)
+repositories.py       # Funções de consulta e estatísticas
+schemas.py            # Pydantic schemas
+scraping.py           # Coletor (requests + BeautifulSoup)
+create_tables.py      # Script para criar tabelas
+vercel.json           # Configuração do deploy na Vercel
+requirements.txt      # Dependências
 ```
 
-2) Instale dependências:
+### Pré-requisitos
+- Python 3.13 (ou compatível com as libs)
+- PostgreSQL acessível via URL
+
+### Instalação e Configuração (Local)
+1. Crie e ative um virtualenv (opcional):
+```bash
+python3 -m venv venv && source venv/bin/activate
+```
+2. Instale dependências:
 ```bash
 pip install -r requirements.txt
 ```
-
-3) Ajuste variáveis de ambiente (local):
-- A aplicação usa constantes no código para JWT por padrão, mas é recomendado sobrepor via ambiente na Vercel.
-- Configure o banco em `database.py` (ou via `DATABASE_URL` na Vercel). Formato suportado:
-```
-postgresql+psycopg2://USUARIO:SENHA@HOST:PORTA/NOME_DO_BANCO
-```
-Atualmente em `database.py`:
-```python
-DATABASE_URL = "postgresql+psycopg2://macos@localhost/booksdb"
-```
-Ajuste conforme seu ambiente.
-
-4) Crie as tabelas:
+3. Configure o banco em `database.py` (ou via variável de ambiente). Atualmente o projeto utiliza uma URL Postgres no arquivo. Para uso em produção, defina via env e leia no `database.py`.
+4. Crie as tabelas:
 ```bash
 python create_tables.py
 ```
-
-## Executando localmente
-Inicie a API com Uvicorn:
-```bash
-uvicorn main:app --reload
-```
-Acesse:
-- Raiz: `/` (mensagem e links)
-- Docs (Swagger): `/docs`
-- OpenAPI JSON: `/openapi.json`
-
-## Autenticação (JWT)
-- Login: `POST /api/v1/auth/login`
-  - Body: `{ "username": "admin", "password": "secret" }`
-  - Resposta: `access_token` (1h) e `refresh_token` (7 dias)
-- Refresh: `POST /api/v1/auth/refresh`
-  - Body: `{ "refresh_token": "<token>" }`
-- Verificar token: `GET /api/v1/auth/verify` (Authorization: `Bearer <access_token>`)
-
-Use `Authorization: Bearer <access_token>` nas rotas protegidas.
-
-## Endpoints
-- Obrigatórios
-  - `GET /api/v1/books` — lista todos os livros
-  - `GET /api/v1/categories` — lista categorias distintas
-  - `GET /api/v1/health` — status da API e DB
-  - `GET /api/v1/books/{book_id}` — detalhe do livro por ID
-  - `GET /api/v1/books/search?title=...&category=...` — busca por título e/ou categoria
-- Opcionais
-  - `GET /api/v1/books/top-rated` — livros com maior rating
-  - `GET /api/v1/books/price-range?min=...&max=...` — livros por faixa de preço
-  - `GET /api/v1/stats/overview` — estatísticas gerais (total, preço médio, distribuição de ratings)
-  - `GET /api/v1/stats/categories` — estatísticas por categoria (médias e extremos de preço)
-- Admin
-  - `POST /api/v1/scraping/trigger` — dispara o scraping (protegido, exige token)
-
-## Scraping
-- Implementado em `scraping.py` na função `scrape_books()`
-- A rota `POST /api/v1/scraping/trigger` chama `scrape_books()`
-- Origem dos dados: `https://books.toscrape.com/`
-- Campos salvos: `titulo`, `preco`, `disponibilidade`, `rating`, `categoria`, `imagem`
-
-### Executar scraping manualmente (opcional)
+5. (Opcional) Popular o banco com scraping:
 ```bash
 python scraping.py
 ```
+6. Execute localmente:
+```bash
+uvicorn main:app --reload --port 8000
+```
+7. Acesse a documentação automática:
+- Swagger UI: `http://localhost:8000/docs`
+- OpenAPI JSON: `http://localhost:8000/openapi.json`
 
-## Banco de Dados
-Modelo `Book` (`models.py`):
-- `id: int`
-- `titulo: str`
-- `preco: float`
-- `disponibilidade: str`
-- `rating: int`
-- `categoria: str`
-- `imagem: str`
+### Autenticação
+- JWT HS256 com expiração (1h access, 7d refresh)
+- Credenciais de teste (embarcadas): `admin` / `secret`
+- Fluxo:
+  - POST `/api/v1/auth/login` → retorna `access_token` e `refresh_token`
+  - POST `/api/v1/auth/refresh` → emite novo `access_token`
+  - GET `/api/v1/auth/verify` → valida token (Bearer)
 
-Migração simplificada (sem Alembic): `python create_tables.py`
+### Documentação das Rotas
 
-## Variáveis de Ambiente (Deploy)
-Configure no painel da Vercel (Project Settings > Environment Variables):
-- `DATABASE_URL`: conexão PostgreSQL (produção/serviço gerenciado)
-- `JWT_SECRET`: segredo para assinar tokens
-- `JWT_ALGORITHM`: ex. `HS256`
+Rotas públicas:
+- `GET /` → ping raiz (útil para Vercel)
+- `GET /api/v1/health` → status API e DB
+- `GET /api/v1/books` → lista todos os livros
+- `GET /api/v1/books/{book_id}` → detalhes por ID
+- `GET /api/v1/books/search?title={t}&category={c}` → busca por título/categoria (parciais, case-insensitive; requer ao menos 1 parâmetro)
+- `GET /api/v1/categories` → lista categorias únicas
 
-## Deploy na Vercel
-Arquivos necessários:
-- `vercel.json`:
+Rotas opcionais (analíticas):
+- `GET /api/v1/books/top-rated` → livros com maior rating
+- `GET /api/v1/books/price-range?min={min}&max={max}` → filtra por faixa de preço
+- `GET /api/v1/stats/overview` → total, preço médio, distribuição de ratings
+- `GET /api/v1/stats/categories` → métricas por categoria
+
+Rotas de autenticação:
+- `POST /api/v1/auth/login` → autentica e retorna tokens
+- `POST /api/v1/auth/refresh` → renova access token
+- `GET /api/v1/auth/verify` → verifica validade do token
+
+Rota protegida (requer Bearer access token):
+- `POST /api/v1/scraping/trigger` → dispara scraping (admin)
+
+### Exemplos de Requests/Responses
+
+Login:
+```bash
+curl -X POST "$BASE_URL/api/v1/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"secret"}'
+```
+Resposta (200):
 ```json
 {
-  "version": 2,
-  "builds": [
-    { "src": "api/index.py", "use": "@vercel/python" }
-  ],
-  "routes": [
-    { "src": "/(.*)", "dest": "api/index.py" }
-  ],
-  "env": {
-    "DATABASE_URL": "postgresql+psycopg2://USER:PASSWORD@HOST:PORT/DBNAME",
-    "JWT_SECRET": "CHANGE_ME",
-    "JWT_ALGORITHM": "HS256"
-  }
+  "access_token": "<jwt>",
+  "refresh_token": "<jwt>",
+  "token_type": "bearer",
+  "expires_in": 3600
 }
 ```
-- `api/index.py`:
-```python
-from main import app as fastapi_app
 
-app = fastapi_app
-```
-
-Passos:
-1) Importar o repositório no Vercel (project root apontando para a raiz do repo)
-2) Definir variáveis de ambiente (`DATABASE_URL`, `JWT_SECRET`, `JWT_ALGORITHM`)
-3) Deploy
-
-Após o deploy:
-- Acesse `/` (deve retornar mensagem "API online")
-- Acesse `/docs` para testar os endpoints
-
-## Teste rápido via curl
-- Health:
+Buscar livros por título:
 ```bash
-curl -s https://SEU_DOMINIO.vercel.app/api/v1/health | jq
+curl "$BASE_URL/api/v1/books/search?title=python"
 ```
-- Login:
-```bash
-curl -s -X POST https://SEU_DOMINIO.vercel.app/api/v1/auth/login \
-  -H 'Content-Type: application/json' \
-  -d '{"username":"admin","password":"secret"}' | jq
-```
-- Scraping (com token):
-```bash
-ACCESS=SEU_TOKEN_AQUI
-curl -s -X POST https://SEU_DOMINIO.vercel.app/api/v1/scraping/trigger \
-  -H "Authorization: Bearer $ACCESS" | jq
+Resposta (200):
+```json
+{
+  "message": "N livro(s) encontrado(s) com os critérios: título contém 'python'",
+  "data": [
+    { "id": 1, "titulo": "...", "preco": 51.99, "rating": 4, "categoria": "..." }
+  ],
+  "total": 1,
+  "filters": { "title": "python", "category": null }
+}
 ```
 
-## Dicas e resolução de problemas
-- 404 no `/`: adicionamos rota raiz em `main.py`; garanta que `api/index.py` está importando `app` corretamente
-- Erros de dependências: confira `requirements.txt` na raiz
-- Erro de conexão com DB: verifique `DATABASE_URL` e segurança de rede do serviço PostgreSQL
-- Timeout no scraping: a Vercel tem limites de execução; para cargas grandes, considere rodar o scraping localmente ou via job externo e apenas servir a API na Vercel
+Listar livros:
+```bash
+curl "$BASE_URL/api/v1/books"
+```
+Resposta (200) — esquema por item (`BookSchema`):
+```json
+{
+  "id": 1,
+  "titulo": "...",
+  "preco": 51.99,
+  "disponibilidade": "In stock",
+  "rating": 4,
+  "categoria": "Fiction",
+  "imagem": "https://...jpg"
+}
+```
 
-## Licença
-Projeto acadêmico para o Tech Challenge FIAP. Uso educacional.
+Faixa de preço:
+```bash
+curl "$BASE_URL/api/v1/books/price-range?min=10&max=50"
+```
+
+Top rated:
+```bash
+curl "$BASE_URL/api/v1/books/top-rated"
+```
+
+Stats gerais:
+```bash
+curl "$BASE_URL/api/v1/stats/overview"
+```
+
+Disparar scraping (protegido):
+```bash
+curl -X POST "$BASE_URL/api/v1/scraping/trigger" \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
+```
+
+### Execução na Vercel (Deploy)
+- O projeto já está configurado com `vercel.json`:
+  - Builds: `@vercel/python` com `api/index.py`
+  - Rotas: todo tráfego direcionado para `api/index.py`
+- Variáveis de ambiente requeridas na Vercel:
+  - `DATABASE_URL` → ex.: `postgresql+psycopg2://USER:PASSWORD@HOST:PORT/DBNAME`
+  - `JWT_SECRET` → segredo para assinar tokens
+  - `JWT_ALGORITHM` → normalmente `HS256`
+
+Passos para deploy:
+1. Instale a CLI (opcional):
+```bash
+npm i -g vercel
+```
+2. Faça login e deploy na raiz do projeto:
+```bash
+vercel
+```
+3. Configure as variáveis no painel da Vercel (ou via CLI):
+```bash
+vercel env add DATABASE_URL
+vercel env add JWT_SECRET
+vercel env add JWT_ALGORITHM
+```
+4. Promova para produção:
+```bash
+vercel --prod
+```
+
+### Observações Importantes
+- Em produção, evite manter credenciais/segredos dentro do código (`database.py` possui uma URL hardcoded para desenvolvimento). Prefira variáveis de ambiente.
+- A rota raiz `/` foi adicionada para evitar 404 no ambiente Vercel e apontar `docs`.
+- O scraping faz muitas requisições; use com parcimônia em produção.
+- Os dados estão armazenados em um PostgreSQL online na Neon (Neon.tech).
+
+### Licença
+Uso educacional/acadêmico no escopo do Tech Challenge.
+
+
