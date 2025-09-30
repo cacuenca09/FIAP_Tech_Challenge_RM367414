@@ -1,10 +1,10 @@
 {
   "version": 2,
   "builds": [
-    { "src": "deploy/index.py", "use": "@vercel/python" }
+    { "src": "api/index.py", "use": "@vercel/python" }
   ],
   "routes": [
-    { "src": "/(.*)", "dest": "deploy/index.py" }
+    { "src": "/(.*)", "dest": "api/index.py" }
   ],
   "env": {
     "DATABASE_URL": "postgresql+psycopg2://USER:PASSWORD@HOST:PORT/DBNAME",
