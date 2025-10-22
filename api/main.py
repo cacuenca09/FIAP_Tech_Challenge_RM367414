@@ -227,6 +227,11 @@ def search_books_endpoint(
     category: Optional[str] = Query(None, description="Categoria do livro para busca parcial"),
     db: Session = Depends(get_db)
 ):
+    """
+    Busca livros no banco de dados com base em título e/ou categoria fornecidos.
+    Pelo menos um dos parâmetros `title` ou `category` deve ser informado. 
+    Realiza uma busca parcial, retornando todos os livros que contêm os valores fornecidos. 
+    """
     try:
         if not title and not category:
             raise HTTPException(
@@ -281,6 +286,9 @@ def search_books_endpoint(
 
 @app.get("/api/v1/books/top-rated", tags=["Opcionais"])
 def get_top_rated_books_endpoint(db: Session = Depends(get_db)):
+    """
+    Lista os livros com melhor avaliação(rating mais alto).
+    """
     try:
         books = repo.get_top_rated_books(db)
         
@@ -303,12 +311,15 @@ def get_top_rated_books_endpoint(db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
 
-@app.get("/api/v1/books/price-range", tags=["Opcionais"])
+@app.get("/api/v1/books/price-range?min={min_price}&max={max_price}", tags=["Opcionais"])
 def get_books_by_price_range(
     min_price: float = Query(None, alias="min", description="Preço mínimo"),
     max_price: float = Query(None, alias="max", description="Preço máximo"),
     db: Session = Depends(get_db)
 ):
+    """
+    Filtra livros dentro de uma faixa de preço específica..
+    """
     try:
         if min_price is None and max_price is None:
             raise HTTPException(
@@ -374,10 +385,16 @@ def get_books_by_price_range(
 
 @app.get("/api/v1/books", response_model=list[BookSchema], tags=["Obrigatório"])
 def read_books(db: Session = Depends(get_db)):
+    """
+    Lista todos os livros disponíveis na base de dados.
+    """
     return repo.get_books(db)
 
 @app.get("/api/v1/categories", response_model=list[str], tags=["Obrigatório"])
 def list_categories(db: Session = Depends(get_db)):
+    """
+    Lista todas as categorias disponíveis.
+    """
     categories = repo.get_categories(db)
     if not categories:
         raise HTTPException(status_code=404, detail="Nenhuma categoria encontrada")
@@ -385,6 +402,9 @@ def list_categories(db: Session = Depends(get_db)):
 
 @app.get("/api/v1/health", tags=["Obrigatório"])
 def health_check(db: Session = Depends(get_db)):
+    """
+    Verifica o status da conexão com o banco de dados.
+    """
     try:
         db.execute(text("SELECT 1"))
         return {"status": "ok", "database": "connected"}
@@ -393,16 +413,26 @@ def health_check(db: Session = Depends(get_db)):
 
 @app.get("/api/v1/stats/overview", tags=["Opcionais"])
 def get_overview_stats(db: Session = Depends(get_db)):
+    """
+    Retorna estatísticas gerais da coleção (total de
+livros, preço médio, distribuição de ratings).
+    """
     stats = repo.get_overview_stats(db) 
     return stats
 
 @app.get("/api/v1/stats/categories", tags=["Opcionais"])
 def get_stats_categories(db: Session = Depends(get_db)):
+    """
+    Retorna estatísticas detalhadas por categoria estatísticas detalhadas por categoria (quantidade de livros, preços por categoria).
+    """
     stats = repo.get_category_stats(db)
     return stats
 
 @app.get("/api/v1/books/{book_id}", response_model=BookSchema, tags=["Obrigatório"])
 def read_book(book_id: int, db: Session = Depends(get_db)):
+    """"
+    Retorna detalhes completos de um livro específico pelo ID.
+    """
     book = repo.get_book_by_id(db, book_id)
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
