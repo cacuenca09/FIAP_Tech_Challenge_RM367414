@@ -311,7 +311,7 @@ def get_top_rated_books_endpoint(db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
 
-@app.get("/api/v1/books/price-range?min={min_price}&max={max_price}", tags=["Opcionais"])
+@app.get("/api/v1/books/price-range", tags=["Opcionais"])
 def get_books_by_price_range(
     min_price: float = Query(None, alias="min", description="Preço mínimo"),
     max_price: float = Query(None, alias="max", description="Preço máximo"),
