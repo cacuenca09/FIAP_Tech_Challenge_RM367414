@@ -49,7 +49,7 @@ def scrape_books():
         next_page = soup.select_one("li.next a")
         if next_page:
             next_url = next_page["href"]
-            # Constrói a URL completa
+            # Constroi a URL completa
             if "catalogue/" not in next_url:
                 url = "https://books.toscrape.com/catalogue/" + next_url
             else:

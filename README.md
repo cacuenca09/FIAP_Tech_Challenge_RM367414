@@ -1,147 +1,162 @@
 ## FIAP - Tech Challenge 1 - Books API
 
-API REST construída com **FastAPI** para coleta (scraping), armazenamento e consulta de livros do site [Books to Scrape](https://books.toscrape.com).
-O projeto inclui **autenticação JWT**, endpoints de consulta obrigatórios e opcionais, estatísticas, scraping sob demanda e integração com banco de dados **PostgreSQL**.
+API REST construída com **FastAPI** para coletar (scraping), armazenar e consultar livros do site [Books to Scrape](https://books.toscrape.com). O projeto inclui **autenticação JWT**, endpoints obrigatórios e opcionais, estatísticas, scraping sob demanda e integração com **PostgreSQL**.
 
-Os dados são armazenados em um **PostgreSQL online (Neon)**, e o deploy foi realizado na **Vercel**, utilizando `api/index.py` como entrypoint.
-
-Acessar a API (em deploy público) : `https://fiap-tech-challenge-rm-367414-6sm8.vercel.app/docs#/`
+- **Docs (deploy público)**: [`/docs` na Vercel](https://fiap-tech-challenge-rm-367414.vercel.app/docs)
 
 ### Objetivo
 
-Este projeto faz parte do **FIAP - Tech Challenge 1** e tem como meta:
+Este projeto faz parte do **FIAP - Tech Challenge 1** e tem como metas:
 
-* Coletar dados de livros via **web scraping**
-* Persistir as informações em um banco **PostgreSQL**
-* Disponibilizar uma API para consultas públicas e estatísticas
-* Proteger endpoints administrativos com **JWT Authentication**
-* Explorar boas práticas de arquitetura e deploy em nuvem (serverless via Vercel)
+- Coletar dados de livros via web scraping
+- Persistir as informações em um banco PostgreSQL
+- Disponibilizar uma API para consultas e estatísticas
+- Proteger endpoints administrativos com JWT
+- Aplicar boas práticas de arquitetura e deploy serverless (Vercel)
 
 ### Arquitetura
 
 ![Diagrama do projeto](./diagrama.svg)
 
-* Scraping (requests + BeautifulSoup) → PostgreSQL (Neon)
-* FastAPI + SQLAlchemy → API RESTful
-* JWT Authentication → segurança de endpoints
-* Vercel → deploy serverless
+- Scraping (Requests + BeautifulSoup) → PostgreSQL (Neon)
+- FastAPI + SQLAlchemy → API RESTful
+- JWT Authentication → proteção de endpoints
+- Vercel → deploy serverless (entrypoint `api/index.py`)
 
-Estrutura de diretórios:
+Estrutura principal de diretórios/arquivos:
 
 ```
-api/index.py          # Entrypoint Vercel (importa app do main)
-main.py               # Definição dos endpoints FastAPI
-database.py           # Engine, SessionLocal e Base (SQLAlchemy)
-models.py             # Modelo Book (ORM)
-repositories.py       # Funções de consulta e estatísticas
-schemas.py            # Pydantic schemas
-scraping.py           # Coletor (requests + BeautifulSoup)
-create_tables.py      # Script para criar tabelas
-vercel.json           # Configuração do deploy na Vercel
-requirements.txt      # Dependências
+api/
+  index.py           # Entrypoint da Vercel (exporta `app` do FastAPI)
+  main.py            # Definição dos endpoints
+app/
+  database.py        # Engine, SessionLocal e Base (SQLAlchemy)
+  models.py          # Modelo ORM (Book)
+  repositories.py    # Regras de acesso a dados/estatísticas
+  schemas.py         # Pydantic Schemas
+scripts/
+  scraping.py        # Coletor de livros (requests + BeautifulSoup)
+  create_tables.py   # Criação de tabelas
+vercel.json          # Configuração do deploy
+requirements.txt     # Dependências
 ```
 
 ### Tecnologias Utilizadas
 
-* Python 3.13
-* FastAPI
-* SQLAlchemy
-* Pydantic
-* PostgreSQL (Neon.tech)
-* Requests + BeautifulSoup
-* PyJWT
-* Uvicorn
-* Vercel
+- Python 3.13
+- FastAPI, Starlette
+- SQLAlchemy
+- Pydantic
+- PostgreSQL (Neon.tech)
+- Requests, BeautifulSoup4
+- PyJWT
+- Uvicorn
+- Vercel (Serverless Python)
 
 ### Pré-requisitos
 
-* Python 3.13 (ou versão compatível)
-* Banco PostgreSQL acessível (local ou online)
+- Python 3.13 (ou compatível)
+- Banco PostgreSQL acessível (local/online)
 
 ### Instalação e Configuração (Local)
 
-1. Clone o repositório:
+1) Clone o repositório:
 
 ```bash
 git clone https://github.com/<seu-usuario>/tech-challenge-books-api.git
 cd tech-challenge-books-api
 ```
 
-2. Crie e ative um virtualenv (opcional):
+2) Crie e ative um ambiente virtual (opcional):
 
 ```bash
-python3 -m venv venv && source venv/bin/activate
+python3 -m venv venv
+source venv/bin/activate
 ```
 
-3. Instale as dependências:
+3) Instale as dependências:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-4. Configure a conexão com o banco no `database.py` ou via variável de ambiente.
-
-5. Crie as tabelas:
+4) Configure as variáveis de ambiente (recomendado):
 
 ```bash
-python create_tables.py
+export DATABASE_URL="postgresql+psycopg2://USER:PASSWORD@HOST:PORT/DBNAME"
+export JWT_SECRET="sua_chave_segura"
+export JWT_ALGORITHM="HS256"
 ```
 
-6. (Opcional) Popular o banco com scraping:
+5) Crie as tabelas:
 
 ```bash
-python scraping.py
+python scripts/create_tables.py
 ```
 
-7. Execute localmente:
+6) (Opcional) Popular o banco com scraping localmente:
 
 ```bash
-uvicorn main:app --reload --port 8000
+python scripts/scraping.py
 ```
 
-8. Acesse a documentação automática:
+7) Suba o servidor localmente:
 
-* Swagger UI: `https://fiap-tech-challenge-rm-367414-6sm8.vercel.app/docs#/`
+```bash
+uvicorn api.main:app --reload --port 8000
+```
 
-### Autenticação
+8) Acesse a documentação local: `http://localhost:8000/docs`
 
-* JWT HS256 com expiração (1h access, 7d refresh)
-* Credenciais de teste: `admin` / `secret`
-* Fluxo:
+9) Acesse a documentação do deploy: [`/docs` na Vercel](https://fiap-tech-challenge-rm-367414.vercel.app/docs)
 
-  * POST `/api/v1/auth/login` → retorna `access_token` e `refresh_token`
-  * POST `/api/v1/auth/refresh` → emite novo `access_token`
-  * GET `/api/v1/auth/verify` → valida token (Bearer)
+### Autenticação (JWT)
 
-### Documentação das Rotas
+- Algoritmo: HS256
+- Padrão: Bearer Token no header `Authorization`
+- Credenciais de teste: `admin` / `secret`
+
+Fluxo básico:
+
+- POST `/api/v1/auth/login` → retorna `access_token` e `refresh_token`
+- POST `/api/v1/auth/refresh` → emite novo `access_token`
+- GET `/api/v1/auth/verify` → valida token atual
+
+### Documentação das Rotas (Resumo)
 
 Rotas públicas:
 
-* `GET /` → ping raiz
-* `GET /api/v1/health` → status API e DB
-* `GET /api/v1/books` → lista todos os livros
-* `GET /api/v1/books/{book_id}` → detalhes por ID
-* `GET /api/v1/books/search?title={t}&category={c}` → busca por título/categoria
-* `GET /api/v1/categories` → lista categorias únicas
+- `GET /` → ping raiz
+- `GET /api/v1/health` → status da API e banco
+- `GET /api/v1/books` → lista todos os livros
+- `GET /api/v1/books/{book_id}` → detalhes por ID
+- `GET /api/v1/books/search?title={t}&category={c}` → busca por título/categoria
+- `GET /api/v1/categories` → categorias únicas
 
 Rotas opcionais (analíticas):
 
-* `GET /api/v1/books/top-rated` → livros com maior rating
-* `GET /api/v1/books/price-range?min={min}&max={max}` → filtra por faixa de preço
-* `GET /api/v1/stats/overview` → total, preço médio, distribuição de ratings
-* `GET /api/v1/stats/categories` → métricas por categoria
+- `GET /api/v1/books/top-rated` → livros com maior rating
+- `GET /api/v1/books/price-range?min={min}&max={max}` → filtra por preço
+- `GET /api/v1/stats/overview` → total, preço médio, distribuição de ratings
+- `GET /api/v1/stats/categories` → métricas por categoria
 
-Rotas de autenticação:
+Autenticação:
 
-* `POST /api/v1/auth/login` → autentica e retorna tokens
-* `POST /api/v1/auth/refresh` → renova access token
-* `GET /api/v1/auth/verify` → verifica validade do token
+- `POST /api/v1/auth/login` → autentica e retorna tokens
+- `POST /api/v1/auth/refresh` → renova access token
+- `GET /api/v1/auth/verify` → valida token
 
-Rota protegida (requer Bearer access token):
+Protegida (Bearer token necessário):
 
-* `POST /api/v1/scraping/trigger` → dispara scraping (admin)
+- `POST /api/v1/scraping/trigger` → dispara scraping
 
 ### Exemplos de Requests/Responses
+
+Defina a URL base do deploy para testar diretamente a versão publicada:
+
+```bash
+BASE_URL="https://fiap-tech-challenge-rm-367414.vercel.app"
+```
 
 Login:
 
@@ -151,7 +166,7 @@ curl -X POST "$BASE_URL/api/v1/auth/login" \
   -d '{"username":"admin","password":"secret"}'
 ```
 
-Resposta:
+Resposta (200):
 
 ```json
 {
@@ -168,7 +183,7 @@ Buscar livros por título:
 curl "$BASE_URL/api/v1/books/search?title=python"
 ```
 
-Resposta:
+Resposta (200):
 
 ```json
 {
@@ -187,7 +202,7 @@ Listar livros:
 curl "$BASE_URL/api/v1/books"
 ```
 
-Resposta:
+Exemplo de item:
 
 ```json
 {
@@ -219,34 +234,41 @@ Stats gerais:
 curl "$BASE_URL/api/v1/stats/overview"
 ```
 
-Disparar scraping (protegido):
+Scraping (protegido):
 
 ```bash
+ACCESS_TOKEN="<seu_access_token>"
 curl -X POST "$BASE_URL/api/v1/scraping/trigger" \
   -H "Authorization: Bearer $ACCESS_TOKEN"
 ```
 
-### Execução na Vercel (Deploy)
+### Execução e Deploy
 
-* O projeto já está configurado com `vercel.json`:
+Execução local (resumo):
 
-  * Builds: `@vercel/python` com `api/index.py`
-  * Rotas: todo tráfego direcionado para `api/index.py`
-* Variáveis de ambiente requeridas na Vercel:
+```bash
+python scripts/create_tables.py      # cria tabelas
+python scripts/scraping.py           # opcional: popula o banco
+uvicorn api.main:app --reload        # inicia a API
+```
 
-  * `DATABASE_URL` → ex.: `postgresql+psycopg2://USER:PASSWORD@HOST:PORT/DBNAME`
-  * `JWT_SECRET` → segredo para assinar tokens
-  * `JWT_ALGORITHM` → normalmente `HS256`
+Deploy na Vercel:
 
-Passos para deploy:
+- `vercel.json` já aponta para `api/index.py` (Python serverless)
+- Variáveis de ambiente (configure em Settings → Environment Variables):
+  - `DATABASE_URL`
+  - `JWT_SECRET`
+  - `JWT_ALGORITHM` (ex.: HS256)
+
+Passos sugeridos:
 
 ```bash
 npm i -g vercel
-vercel
+vercel                      # configura o projeto
 vercel env add DATABASE_URL
 vercel env add JWT_SECRET
 vercel env add JWT_ALGORITHM
-vercel --prod
+vercel --prod               # publica em produção
 ```
 
 ### Licença
